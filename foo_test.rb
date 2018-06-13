@@ -1,5 +1,5 @@
 require 'test/unit'
-require_relative 'foo.rb'
+require_relative 'foo'
 
 class FooTest < Test::Unit::TestCase
 

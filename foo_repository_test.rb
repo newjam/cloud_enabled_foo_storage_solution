@@ -1,5 +1,5 @@
 require 'test/unit'
-require_relative 'foo_repository.rb'
+require_relative 'foo_repository'
 require_relative 'foo.rb'
 
 class FooRepositoryTest < Test::Unit::TestCase
@@ -27,6 +27,19 @@ class FooRepositoryTest < Test::Unit::TestCase
     assert_equal foo1, foo2
   end
 
+  def test_index
+    foo1 = Foo.create('I am a foo')
+    @foos.create(foo1)
+    foo2 = @foos[foo1.id]
+    assert_equal foo1, foo2
+  end
+
+  def test_append
+    foo = Foo.create('I am a foo')
+    @foos << foo << foo
+    assert_equal foo, @foos[foo.id]
+  end
+
   def test_updates_persist
     foo1 = Foo.create('I am a foo')
     @foos.create(foo1)
@@ -48,8 +61,6 @@ class FooRepositoryTest < Test::Unit::TestCase
     results.each do |foo|
       assert (foo.is_a? Foo)
     end
-    puts [1, 2, 3].to_json
-    puts results.to_json
   end
 
   def test_delete
@@ -60,6 +71,5 @@ class FooRepositoryTest < Test::Unit::TestCase
     @foos.delete_by_id foo.id
     assert_equal 0, @foos.size
   end
-
 
 end

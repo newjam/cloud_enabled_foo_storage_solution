@@ -1,16 +1,16 @@
 require 'sinatra'
 require 'json'
 require 'sqlite3'
-require_relative 'foo.rb'
-require_relative 'foo_repository.rb'
+require_relative 'foo'
+require_relative 'foo_repository'
 
-db = SQLite3::Database.open('test.db')
+db = SQLite3::Database.open('foo.db')
 
 foos = FooRepository.new(db)
 foos.create_table
 
 get '/foos', :provides => :json do
-  response_array = foos.find_all.map do |foo|
+  response_array = foos.map do |foo|
     {
       "url"  => "http://#{request.host_with_port}/foos/#{foo.id}",
       "name" => foo.name
@@ -21,7 +21,8 @@ get '/foos', :provides => :json do
 end
 
 get '/foos/:id', :provides => :json do
-  foo = foos.find_by_id params[:id]
+  id = params[:id]
+  foo = foos[id]
   return 404 if foo.nil?
   response_object = {
     "url"  => "http://#{request.host_with_port}/foos/#{foo.id}",
@@ -35,14 +36,8 @@ put '/foos/:id', :provides => :json do
   json = JSON.parse request.body.read
   name = json['name']
 
-  foo = foos.find_by_id id
-  if foo.nil? then
-    foo = Foo.new id, name
-    foos.create foo
-  else
-    foo.name = name
-    foos.update foo
-  end
+  foo = Foo.new id, name
+  foos << foo
 
   response_object = {
     "url"  => "http://#{request.host_with_port}/foos/#{foo.id}",
@@ -63,7 +58,7 @@ post '/foos', :provides => :json do
   name = json['name']
 
   foo = Foo.create(name)
-  foos.create(foo)
+  foos << foo
 
   response_object = {
     "url"  => "http://#{request.host_with_port}/foos/#{foo.id}",

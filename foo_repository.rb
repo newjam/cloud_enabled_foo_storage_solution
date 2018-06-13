@@ -3,8 +3,11 @@ require "sqlite3"
 require_relative 'foo.rb'
 
 class FooRepository  
+  include Enumerable
+
   def initialize(db)
     @db = db
+    db.results_as_hash = true
   end
 
   def create_table
@@ -22,9 +25,18 @@ class FooRepository
 
   def find_by_id(id)
     results = @db.execute('SELECT id, name FROM foos WHERE id = ?', id)
-    raise "Impossible! Should only be one foo with id #{id}. Check your constraints." if results.size > 1
-    return nil if results.size < 1
-    FooRepository.from_row results[0]
+    case results.size
+    when 0
+      nil
+    when 1
+      FooRepository.from_row results[0]
+    else
+      raise "Error! Should be at most one 'foo' with id '#{id}'. Check your constraints." 
+    end
+  end
+
+  def [] id
+    find_by_id id
   end
 
   def size
@@ -36,11 +48,11 @@ class FooRepository
   end
 
   def find_all
-    results = []
-    @db.execute('SELECT id, name FROM foos').each {|row|
-      results << FooRepository.from_row(row)
-    }
-    results
+    @db.execute('SELECT id, name FROM foos').map { |row| FooRepository.from_row row }
+  end
+
+  def each
+    find_all
   end
 
   def create(foo)
@@ -51,10 +63,19 @@ class FooRepository
     @db.execute('UPDATE foos SET name = ? WHERE id = ?', foo.name, foo.id)
   end
 
+  def << foo 
+    if self[foo.id].nil? then
+      create foo
+    else
+      update foo
+    end
+    self
+  end
+
   private
 
   def self.from_row(row) 
-    Foo.new row[0], row[1]
+    Foo.new row['id'], row['name']
   end
 
 end
